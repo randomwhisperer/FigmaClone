@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAppSelector } from '@/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { toggleTheme } from '@/store/slices/designSlice';
 
 type ThemeContextType = {
   isDarkMode: boolean;
@@ -10,6 +11,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const designTheme = useAppSelector(state => state.design.present.theme);
+  const dispatch = useAppDispatch();
   const [isDarkMode, setIsDarkMode] = useState(designTheme === 'dark');
 
   // Update when theme changes in Redux
@@ -27,7 +29,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isDarkMode]);
 
   const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
+    dispatch(toggleTheme());
   };
 
   return (

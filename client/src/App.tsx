@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { toggleTheme } from "@/store/slices/designSlice";
 import { motion } from "framer-motion";
+// import { WebSocketProvider } from "@/contexts/WebSocketContext"; // Will enable later
 
 function App() {
   const theme = useAppSelector(state => state.design.present.theme);

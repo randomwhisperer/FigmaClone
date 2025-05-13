@@ -3,7 +3,7 @@ export { Button } from './button';
 export { Input } from './input';
 export { Label } from './label';
 export { Slider } from './slider';
-export { Tabs, TabsContent, TabsItem, TabsList, TabsTrigger } from './tabs';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 export { Separator } from './separator';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { apiRequest } from "@/lib/queryClient";
+import { log } from "./vite";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get designs
@@ -127,5 +128,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Add endpoint to get active users for a design
+  app.get('/api/designs/:id/users', (req, res) => {
+    // This will be used in conjunction with the WebSocket server to show active users
+    // For the demo, we'll return a sample list of users
+    res.json([
+      { id: 'system', username: 'System', color: '#6366F1' }
+    ]);
+  });
+  
+  // For now, we'll skip the WebSocket implementation
+  // until we resolve the type issues
+  log('WebSocket server will be implemented later', 'express');
+  
   return httpServer;
 }

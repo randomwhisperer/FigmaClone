@@ -5,7 +5,7 @@ import { undoDesign, redoDesign } from "@/store/store";
 import { useTheme } from "@/contexts/ThemeContext";
 import { 
   MenuIcon, Moon, Sun, Save, Download, Upload, 
-  FileNew, FilePlus, Edit, Undo, Redo, Trash, 
+  File, FilePlus, Edit, Undo, Redo, Trash, 
   Settings, HelpCircle, User, ChevronDown, Menu
 } from 'lucide-react';
 import { 
@@ -107,7 +107,7 @@ export function AppHeader({ onExport }: AppHeaderProps) {
             <DropdownMenuContent className="w-56">
               <DropdownMenuGroup>
                 <DropdownMenuItem onClick={handleNewDesign}>
-                  <FileNew className="mr-2 h-4 w-4" />
+                  <File className="mr-2 h-4 w-4" />
                   <span>New</span>
                   <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
                 </DropdownMenuItem>
