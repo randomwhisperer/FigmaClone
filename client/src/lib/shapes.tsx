@@ -1,5 +1,5 @@
 import React from 'react';
-import { ElementType, type Element } from "../../../shared/schema";
+import { ElementType, type Element } from "@shared/schema";
 
 // Draw shapes as React components
 export function drawShape(element: Element) {
