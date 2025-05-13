@@ -1,35 +1,43 @@
-import React from 'react';
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { setDocumentName, toggleTheme, setShowExportDialog, clearCanvas } from "@/store/slices/designSlice";
-import { undoDesign, redoDesign } from "@/store/store";
-import { useTheme } from "@/contexts/ThemeContext";
-import { 
-  MenuIcon, Moon, Sun, Save, Download, Upload, 
-  File, FilePlus, Edit, Undo, Redo, Trash, 
-  Settings, HelpCircle, User, ChevronDown, Menu
-} from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger,
-  DropdownMenuShortcut,
-  DropdownMenuLabel,
-  DropdownMenuGroup,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
+import {
+  ArrowDownToLine,
+  FileIcon,
+  MoreHorizontal,
+  Save,
+  PanelLeft,
+  PanelRight,
+  Moon,
+  Sun,
+  Share,
+  Users,
+  Github,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setDocumentName, toggleTheme } from "@/store/slices/designSlice";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useWebSocket } from "@/contexts/WebSocketContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 
 interface AppHeaderProps {
@@ -37,249 +45,171 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ onExport }: AppHeaderProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [documentName, setLocalDocumentName] = useState("");
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  
   const dispatch = useAppDispatch();
-  const { documentName } = useAppSelector(state => state.design.present);
-  const { toast } = useToast();
+  const title = useAppSelector(state => state.design.present.documentName);
+  const canUndo = useAppSelector(state => state.design.past.length > 0);
+  const canRedo = useAppSelector(state => state.design.future.length > 0);
+  
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const { connected, users } = useWebSocket();
+  const { toast } = useToast();
   
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = React.useState(false);
-  const [newName, setNewName] = React.useState(documentName);
+  // Handle title edit start
+  const handleEditStart = () => {
+    setLocalDocumentName(title);
+    setIsEditing(true);
+  };
   
-  const handleRename = () => {
-    dispatch(setDocumentName(newName));
-    setIsRenameDialogOpen(false);
+  // Handle title save
+  const handleTitleSave = () => {
+    if (documentName.trim()) {
+      dispatch(setDocumentName(documentName));
+    }
+    setIsEditing(false);
+  };
+  
+  // Handle save action
+  const handleSave = () => {
     toast({
-      title: "Design renamed",
-      description: `Design has been renamed to "${newName}"`,
+      title: "Design Saved",
+      description: "Your design has been saved successfully.",
     });
   };
   
-  const handleNewDesign = () => {
-    dispatch(clearCanvas());
+  // Handle share action
+  const handleShare = () => {
+    setIsShareDialogOpen(true);
+  };
+  
+  // Handle copy share link
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText("https://design.example.com/shared/design-123");
     toast({
-      title: "New Design",
-      description: "Canvas cleared. Start creating your new design.",
+      title: "Link Copied",
+      description: "Share link has been copied to clipboard.",
     });
+    setIsShareDialogOpen(false);
   };
-  
-  const handleThemeToggle = () => {
-    dispatch(toggleTheme());
-    toggleDarkMode();
-  };
-  
-  const handleExport = () => {
-    dispatch(setShowExportDialog(true));
-    onExport();
-  };
-  
-  const handleUndo = () => {
-    dispatch(undoDesign());
-  };
-  
-  const handleRedo = () => {
-    dispatch(redoDesign());
-  };
-  
+
   return (
-    <header className="figma-header flex items-center justify-between px-4">
-      {/* Logo and left side navigation */}
-      <div className="flex items-center space-x-2">
-        <motion.div 
-          whileHover={{ rotate: 10 }}
-          className="w-8 h-8 bg-primary rounded-md flex items-center justify-center mr-1"
-        >
-          <svg className="w-5 h-5 text-primary-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 18.5C8 16.567 9.567 15 11.5 15H14V18.5C14 20.433 12.433 22 10.5 22C9.04131 22 7.77425 21.1841 7.26274 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M14 11.5C14 9.567 12.433 8 10.5 8H8V15H11.5C12.8978 15 14.1054 14.2041 14.5 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M8 2H14V8H8V2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M14 8C16.2091 8 18 9.79086 18 12C18 14.2091 16.2091 16 14 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </motion.div>
-        
-        <div className="hidden md:flex items-center space-x-1">
-          {/* File Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="px-2 py-1 h-auto text-sm">
-                File
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuItem onClick={handleNewDesign}>
-                  <File className="mr-2 h-4 w-4" />
-                  <span>New</span>
-                  <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <FilePlus className="mr-2 h-4 w-4" />
-                  <span>Open</span>
-                  <DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Save className="mr-2 h-4 w-4" />
-                  <span>Save</span>
-                  <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem onClick={handleExport}>
-                  <Download className="mr-2 h-4 w-4" />
-                  <span>Export</span>
-                  <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Upload className="mr-2 h-4 w-4" />
-                  <span>Import</span>
-                  <DropdownMenuShortcut>⌘I</DropdownMenuShortcut>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <header className="flex items-center justify-between h-14 px-4 border-b bg-background">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center">
+          {/* Logo */}
+          <motion.div
+            className="flex items-center justify-center rounded-md bg-primary text-primary-foreground w-9 h-9 mr-3"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <FileIcon className="h-5 w-5" />
+          </motion.div>
           
-          {/* Edit Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="px-2 py-1 h-auto text-sm">
-                Edit
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuItem onClick={handleUndo}>
-                  <Undo className="mr-2 h-4 w-4" />
-                  <span>Undo</span>
-                  <DropdownMenuShortcut>⌘Z</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleRedo}>
-                  <Redo className="mr-2 h-4 w-4" />
-                  <span>Redo</span>
-                  <DropdownMenuShortcut>⇧⌘Z</DropdownMenuShortcut>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
-                  <span>Rename</span>
-                  <DropdownMenuShortcut>⌘R</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleNewDesign}>
-                  <Trash className="mr-2 h-4 w-4" />
-                  <span>Clear Canvas</span>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Document Title */}
+          {isEditing ? (
+            <div className="flex items-center gap-1">
+              <Input
+                value={documentName}
+                onChange={(e) => setLocalDocumentName(e.target.value)}
+                className="h-8 max-w-[200px]"
+                autoFocus
+                onBlur={handleTitleSave}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleTitleSave();
+                  if (e.key === 'Escape') setIsEditing(false);
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              className="text-lg font-medium cursor-pointer hover:underline"
+              onClick={handleEditStart}
+            >
+              {title || "Untitled Design"}
+            </div>
+          )}
           
-          {/* View Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="px-2 py-1 h-auto text-sm">
-                View
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <span>Zoom In</span>
-                  <DropdownMenuShortcut>⌘+</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Zoom Out</span>
-                  <DropdownMenuShortcut>⌘-</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Fit to Screen</span>
-                  <DropdownMenuShortcut>⌘0</DropdownMenuShortcut>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleThemeToggle}>
-                {isDarkMode ? (
-                  <Sun className="mr-2 h-4 w-4" />
-                ) : (
-                  <Moon className="mr-2 h-4 w-4" />
-                )}
-                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {/* Help Button */}
-          <Button variant="ghost" size="sm" className="px-2 py-1 h-auto text-sm">
-            Help
-          </Button>
+          {/* Connection status badge */}
+          <Badge 
+            variant={connected ? "outline" : "destructive"} 
+            className="ml-3 text-xs"
+          >
+            {connected ? "Connected" : "Offline"}
+          </Badge>
         </div>
         
-        {/* Mobile menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Menu className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="start">
-            <DropdownMenuItem onClick={handleNewDesign}>
-              <File className="mr-2 h-4 w-4" />
-              <span>New Design</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" />
-              <span>Export</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleUndo}>
-              <Undo className="mr-2 h-4 w-4" />
-              <span>Undo</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleRedo}>
-              <Redo className="mr-2 h-4 w-4" />
-              <span>Redo</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleThemeToggle}>
-              {isDarkMode ? (
-                <Sun className="mr-2 h-4 w-4" />
-              ) : (
-                <Moon className="mr-2 h-4 w-4" />
+        <Separator orientation="vertical" className="h-6" />
+        
+        {/* Quick actions */}
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleSave}
+            className="h-9 w-9"
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onExport}
+            className="h-9 w-9"
+          >
+            <ArrowDownToLine className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleShare}
+            className="h-9 w-9"
+          >
+            <Share className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        {/* Active users */}
+        {connected && users.length > 0 && (
+          <div className="flex items-center mr-2">
+            <div className="flex -space-x-2">
+              {users.slice(0, 3).map((user, index) => (
+                <Avatar key={user.id} className="h-7 w-7 border-2 border-background">
+                  <AvatarFallback style={{ backgroundColor: user.color }}>
+                    {user.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              {users.length > 3 && (
+                <div className="flex items-center justify-center h-7 w-7 rounded-full bg-muted border-2 border-background text-xs font-medium">
+                  +{users.length - 3}
+                </div>
               )}
-              <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      
-      {/* Center title */}
-      <div className="flex items-center">
-        <Button
-          variant="ghost"
-          className="font-medium text-sm flex items-center gap-1"
-          onClick={() => setIsRenameDialogOpen(true)}
-        >
-          <span className="truncate max-w-[200px]">{documentName}</span>
-          <ChevronDown className="h-3 w-3 opacity-50" />
-        </Button>
-      </div>
-      
-      {/* Right side actions */}
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hidden md:flex items-center gap-1"
-          onClick={handleExport}
-        >
-          <Download className="h-4 w-4" />
-          <span className="hidden lg:inline">Export</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Toggle panels */}
+        <Button variant="ghost" size="icon" className="h-9 w-9">
+          <PanelLeft className="h-4 w-4" />
         </Button>
         
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleThemeToggle}
-          className="hidden md:flex"
+        <Button variant="ghost" size="icon" className="h-9 w-9">
+          <PanelRight className="h-4 w-4" />
+        </Button>
+        
+        {/* Theme toggle */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={toggleDarkMode}
+          className="h-9 w-9"
         >
           {isDarkMode ? (
             <Sun className="h-4 w-4" />
@@ -288,51 +218,117 @@ export function AppHeader({ onExport }: AppHeaderProps) {
           )}
         </Button>
         
+        {/* More options */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost">
-              <User className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>Options</DropdownMenuLabel>
+            <DropdownMenuItem onClick={handleSave}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Project
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExport}>
+              <ArrowDownToLine className="h-4 w-4 mr-2" />
+              Export Design
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+              <Github className="h-4 w-4 mr-2" />
+              View on GitHub
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <HelpCircle className="mr-2 h-4 w-4" />
-              <span>Help & Feedback</span>
+              <Users className="h-4 w-4 mr-2" />
+              Invite Collaborators
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={toggleDarkMode}>
+              {isDarkMode ? (
+                <>
+                  <Sun className="h-4 w-4 mr-2" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4 mr-2" />
+                  Dark Mode
+                </>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       
-      {/* Rename dialog */}
-      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      {/* Share Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Rename Design</DialogTitle>
+            <DialogTitle>Share Design</DialogTitle>
             <DialogDescription>
-              Enter a new name for your design
+              Share your design with collaborators or get a public link
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="name">Design Name</Label>
-            <Input 
-              id="name" 
-              value={newName} 
-              onChange={(e) => setNewName(e.target.value)}
-              className="mt-1"
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)}>
-              Cancel
+          
+          <div className="flex items-center space-x-2 mt-4">
+            <div className="grid flex-1 gap-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Share Link
+              </label>
+              <Input
+                value="https://design.example.com/shared/design-123"
+                readOnly
+                className="font-mono text-sm"
+              />
+            </div>
+            <Button 
+              type="submit" 
+              size="sm" 
+              className="px-3"
+              onClick={handleCopyLink}
+            >
+              <span className="sr-only">Copy</span>
+              Copy
             </Button>
-            <Button onClick={handleRename}>Save Changes</Button>
+          </div>
+          
+          <div className="mt-4">
+            <h4 className="text-sm font-medium mb-2">Collaborators</h4>
+            <div className="space-y-2">
+              {users.map((user) => (
+                <div key={user.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback style={{ backgroundColor: user.color }}>
+                        {user.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">{user.username}</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {user.id === 'user-1' ? 'Owner' : 'Editor'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <DialogFooter className="sm:justify-start mt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                toast({
+                  title: "Invitation Sent",
+                  description: "Collaborators have been invited to your design.",
+                });
+                setIsShareDialogOpen(false);
+              }}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Invite More
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
