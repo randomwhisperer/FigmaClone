@@ -87,7 +87,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     // Clean up on unmount
     return () => {
-      if (socket.current && socket.current.readyState === WebSocket.OPEN) {
+      if (socket.current && socket.current.readyState === 1) { // 1 = OPEN
         socket.current.close();
       }
     };
@@ -97,7 +97,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const connect = () => {
     // Use secure WebSocket if site is served over HTTPS
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
+    // Use the same path as the server
+    const wsUrl = `${protocol}//${window.location.host}/ws-collaboration`;
     
     socket.current = new WebSocket(wsUrl);
     
@@ -217,7 +218,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   
   // Send a message to the WebSocket server
   const sendMessage = (message: WebSocketMessage) => {
-    if (socket.current && socket.current.readyState === WebSocket.OPEN) {
+    if (socket.current && socket.current.readyState === 1) { // 1 = OPEN
       socket.current.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket not connected');

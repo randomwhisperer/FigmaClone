@@ -222,7 +222,7 @@ export function AppHeader({ onExport }: AppHeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="start">
             <DropdownMenuItem onClick={handleNewDesign}>
-              <FileNew className="mr-2 h-4 w-4" />
+              <File className="mr-2 h-4 w-4" />
               <span>New Design</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleExport}>

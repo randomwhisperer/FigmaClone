@@ -1,4 +1,4 @@
-import WebSocket, { WebSocketServer } from 'ws';
+import { WebSocketServer } from 'ws';
 import { Server } from 'http';
 import { log } from './vite';
 import { Element, type Design } from '../shared/schema';
@@ -31,7 +31,7 @@ export interface WebSocketMessage {
 // Client connection with additional metadata
 interface Client {
   id: string;
-  ws: WebSocket;
+  ws: any; // Using 'any' to avoid WebSocket type issues
   designId?: number;
   username?: string;
   color?: string;
@@ -64,14 +64,18 @@ export class WebSocketServerHandler {
   private designClients: Map<number, Set<string>> = new Map(); // designId -> clientIds
 
   constructor(server: Server) {
-    this.wss = new WebSocketServer({ server });
+    // Use a specific path for our WebSocket server to avoid conflicts with Vite's WebSocket
+    this.wss = new WebSocketServer({ 
+      server,
+      path: '/ws-collaboration'
+    });
     this.setupWSS();
     
-    log('WebSocket server initialized', 'websocket');
+    log('WebSocket server initialized on path /ws-collaboration', 'websocket');
   }
 
   private setupWSS() {
-    this.wss.on('connection', (ws: WebSocket) => {
+    this.wss.on('connection', (ws: any) => {
       const clientId = generateId();
       const client: Client = {
         id: clientId,
@@ -93,9 +97,9 @@ export class WebSocketServerHandler {
       
       log(`Client connected: ${clientId}`, 'websocket');
 
-      ws.onmessage = (event) => {
+      ws.on('message', (message: any) => {
         try {
-          const data: WebSocketMessage = JSON.parse(event.data.toString());
+          const data: WebSocketMessage = JSON.parse(message.toString());
           this.handleMessage(client, data);
         } catch (err) {
           log(`Error parsing message: ${err}`, 'websocket');
@@ -106,9 +110,9 @@ export class WebSocketServerHandler {
             }
           });
         }
-      };
+      });
 
-      ws.onclose = () => {
+      ws.on('close', () => {
         // Notify other clients in the same design
         if (client.designId) {
           this.broadcastToDesign(client.designId, {
@@ -145,7 +149,9 @@ export class WebSocketServerHandler {
     
     switch (type) {
       case MessageType.JOIN_DESIGN:
-        await this.handleJoinDesign(client, designId!, payload);
+        if (designId) {
+          await this.handleJoinDesign(client, designId, payload);
+        }
         break;
         
       case MessageType.LEAVE_DESIGN:
@@ -194,7 +200,10 @@ export class WebSocketServerHandler {
       }
       
       // Add client to design group
-      this.designClients.get(designId)!.add(client.id);
+      const designClients = this.designClients.get(designId);
+      if (designClients) {
+        designClients.add(client.id);
+      }
       
       // Get design data to sync with client
       const design = await storage.getDesign(designId);
@@ -211,17 +220,19 @@ export class WebSocketServerHandler {
       }
       
       // Get all active users in this design
-      const activeUsers = Array.from(this.designClients.get(designId) || [])
+      const clientSet = this.designClients.get(designId);
+      const activeUsers = clientSet ? Array.from(clientSet)
         .map(id => {
-          const client = this.clients.get(id);
+          const c = this.clients.get(id);
+          if (!c) return null;
           return {
-            id: client?.id,
-            username: client?.username,
-            color: client?.color,
-            cursor: client?.cursor,
-            selections: client?.selections
+            id: c.id,
+            username: c.username,
+            color: c.color,
+            cursor: c.cursor,
+            selections: c.selections
           };
-        });
+        }).filter(Boolean) : [];
       
       // Send design data to the joining client
       this.sendToClient(client, {
@@ -471,8 +482,7 @@ export class WebSocketServerHandler {
 
   // Send a message to a specific client
   private sendToClient(client: Client, message: WebSocketMessage) {
-    // WebSocket.OPEN is 1
-    if (client.ws.readyState === 1) {
+    if (client.ws.readyState === 1) { // 1 = OPEN
       client.ws.send(JSON.stringify(message));
     }
   }

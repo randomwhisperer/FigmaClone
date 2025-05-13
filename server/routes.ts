@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { apiRequest } from "@/lib/queryClient";
 import { log } from "./vite";
+import { createWebSocketServer } from "./websocket-new";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get designs
@@ -138,9 +139,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ]);
   });
   
-  // For now, we'll skip the WebSocket implementation
-  // until we resolve the type issues
-  log('WebSocket server will be implemented later', 'express');
+  // Initialize WebSocket server
+  const wsServer = createWebSocketServer(httpServer);
+  log('WebSocket server initialized for real-time collaboration', 'express');
   
   return httpServer;
 }

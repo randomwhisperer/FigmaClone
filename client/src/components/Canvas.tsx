@@ -3,7 +3,8 @@ import { useDesignStore } from "@/store";
 import { ElementType, type Element } from "@shared/schema";
 import { drawShape, isPointInShape } from "@/lib/shapes.tsx";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut } from "lucide-react";
+import { ZoomIn, ZoomOut, Wifi, WifiOff } from "lucide-react";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 
 interface CanvasProps {
   width?: number;
@@ -11,6 +12,17 @@ interface CanvasProps {
 }
 
 export default function Canvas({ width = 800, height = 600 }: CanvasProps) {
+  // Get WebSocket context for collaboration
+  const { 
+    connected, 
+    users, 
+    clientId, 
+    userColor,
+    sendCursorPosition,
+    joinDesign,
+    sendSelectionChange
+  } = useWebSocket();
+  
   // Get state from store
   const { 
     elements, 
@@ -21,6 +33,7 @@ export default function Canvas({ width = 800, height = 600 }: CanvasProps) {
     fillColor,
     strokeColor,
     strokeWidth,
+    activeUsers,
     
     addElement,
     updateElement,
@@ -151,6 +164,11 @@ export default function Canvas({ width = 800, height = 600 }: CanvasProps) {
   // Handle mouse move
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const { x, y } = getTransformedPoint(e.clientX, e.clientY);
+    
+    // Send cursor position to WebSocket server if connected
+    if (connected) {
+      sendCursorPosition(x, y);
+    }
     
     // Handle panning
     if (isPanning && panStart) {
